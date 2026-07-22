@@ -12,9 +12,13 @@ const accountStore = useAccountStore()
 const { loginPageConfig } = storeToRefs(appStore)
 const headerLogoFailed = ref(false)
 
-onMounted(() => {
+onMounted(async () => {
   appStore.fetchLoginPageConfig()
-  accountStore.fetchAccounts()
+  await accountStore.fetchAccounts()
+  const firstAccount = accountStore.accounts[0]
+  if (!accountStore.currentAccount && firstAccount) {
+    accountStore.setCurrentAccount(firstAccount)
+  }
 })
 
 onUnmounted(() => {
