@@ -68,7 +68,7 @@ function accountAvatar(acc: any) {
           @click="emit('refreshWxCodes')"
         >
           <div class="i-carbon-renew mr-2" />
-          <span class="hidden sm:inline">{{ userIsAdmin ? '刷新全部微信Code' : '刷新我的微信Code' }}</span>
+          <span class="hidden sm:inline">{{ userIsAdmin ? '刷新全部账号Code' : '刷新我的账号Code' }}</span>
           <span class="sm:hidden">刷新Code</span>
         </BaseButton>
         <BaseButton
