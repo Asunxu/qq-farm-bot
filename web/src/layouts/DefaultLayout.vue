@@ -6,14 +6,17 @@ import FloatingDock from '@/components/FloatingDock.vue'
 import TopAccountMenu from '@/components/TopAccountMenu.vue'
 import { useAppStore } from '@/stores/app'
 import { useAccountStore } from '@/stores/account'
+import { useUserStore } from '@/stores/user'
 
 const appStore = useAppStore()
 const accountStore = useAccountStore()
+const userStore = useUserStore()
 const { loginPageConfig } = storeToRefs(appStore)
 const headerLogoFailed = ref(false)
 
 onMounted(async () => {
   appStore.fetchLoginPageConfig()
+  await userStore.fetchUserInfo()
   await accountStore.fetchAccounts()
   const firstAccount = accountStore.accounts[0]
   if (!accountStore.currentAccount && firstAccount) {
