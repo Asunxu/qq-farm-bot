@@ -16,7 +16,8 @@ function isAdminUser(user) {
 }
 
 function hasWxRefreshIdentity(account) {
-  return !!String((account && account.wxid) || "").trim();
+  return !!String((account && account.wxid) || "").trim() || 
+         (account && account.loginType === 'yyb' && !!String(account.yybOpenid || "").trim());
 }
 
 function registerAdminAccountRoutes({
