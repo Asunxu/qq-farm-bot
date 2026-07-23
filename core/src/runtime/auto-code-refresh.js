@@ -69,21 +69,56 @@ function createAutoCodeRefreshService(deps) {
     throw new Error(msg);
   }
 
+  async function requestYybCode(account, wxConfig) {
+    const yybOpenid = String(account && account.yybOpenid || '').trim();
+    if (!yybOpenid) throw new Error('账号缺少 yybOpenid，无法自动刷新 Code');
+
+    if (!wxConfig || !wxConfig.apiBase || !wxConfig.apiKey) {
+      throw new Error('应用宝接口未配置');
+    }
+
+    const rawBase = String(wxConfig.apiBase).trim().replace(/\/+$/, '');
+    const base = rawBase.replace(/\/wxapp\/getCode$/i, '').replace(/\/wxapp$/i, '').replace(/\/accounts$/i, '');
+    const appId = wxConfig.appId || 'wx5306c5978fdb76e4';
+
+    const response = await fetch(`${base}/wxapp/getCode`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${wxConfig.apiKey}`,
+      },
+      body: JSON.stringify({ ref: yybOpenid, app_id: appId }),
+    });
+
+    const data = await response.json();
+    if (data && data.code === 0 && data.data && data.data.result && data.data.result.code) {
+      return String(data.data.result.code);
+    }
+    const msg = (data && data.msg) || '应用宝获取 Code 失败';
+    throw new Error(msg);
+  }
+
   async function refreshAccountCode(accountId, reason = 'timer') {
     const account = findAccount(accountId);
     if (!account) return false;
 
     const wxConfig = getWxConfig();
-    if (wxConfig.enabled === false) {
-      log('系统', '自动刷新 Code 跳过: 微信登录未启用', {
-        accountId: String(accountId),
-        accountName: account.name,
-      });
-      return false;
-    }
 
     try {
-      const code = await requestFarmCode(account, wxConfig);
+      let code;
+      if (account.loginType === 'yyb' && account.yybOpenid) {
+        code = await requestYybCode(account, wxConfig);
+      } else {
+        if (wxConfig.enabled === false) {
+          log('系统', '自动刷新 Code 跳过: 微信登录未启用', {
+            accountId: String(accountId),
+            accountName: account.name,
+          });
+          return false;
+        }
+        code = await requestFarmCode(account, wxConfig);
+      }
+
       const nextAccount = { ...account, code };
       addOrUpdateAccount(nextAccount);
 
@@ -115,8 +150,10 @@ function createAutoCodeRefreshService(deps) {
     if (!cfg.enabled) return;
 
     const account = findAccount(accountId);
-    if (!account || !String(account.wxid || '').trim()) {
-      log('系统', '自动刷新 Code 未启动: 账号缺少 wxid', {
+    const hasWxid = !!String(account && account.wxid || '').trim();
+    const hasYybIdentity = account && account.loginType === 'yyb' && !!String(account.yybOpenid || '').trim();
+    if (!account || !hasWxid && !hasYybIdentity) {
+      log('系统', '自动刷新 Code 未启动: 账号缺少刷新凭据', {
         accountId: String(accountId),
         accountName: account && account.name || '',
       });
